@@ -10,7 +10,7 @@ const OtherUsers = ({ users }) => {
 
   return (
     <div>
-      <div className='overflow-auto '>
+      <div className='h-full overflow-y-auto pr-2  max-h-[400px]'>
             {
                 users?.map((user)=>{
                     return (

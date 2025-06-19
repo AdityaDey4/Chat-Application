@@ -1,12 +1,14 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from "react-hot-toast"
 import axios from "axios";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setAuthUser } from '../redux/userSlice';
 // import { BASE_URL } from '..';
 
 const Login = () => {
+
+  const {authUser} = useSelector((store)=> store.user)
   const [user, setUser] = useState({
     username: "",
     password: "",
@@ -31,6 +33,10 @@ const Login = () => {
       console.log(error);
     }
   }
+
+  useEffect(()=> {
+    if(authUser) navigate("/");
+  }, []);
   return (
     <div className="min-w-96 mx-auto">
       <div className='w-full p-6 rounded-lg shadow-md bg-gray-400 bg-clip-padding backdrop-filter backdrop-blur-md bg-opacity-10 border border-gray-100'>

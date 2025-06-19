@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { BiSearchAlt2 } from "react-icons/bi";
 import OtherUsers from "./OtherUsers";
 import axios from "axios";
@@ -9,6 +9,7 @@ import {
   setAuthUser,
   setOtherUsers,
   setSelectedUser,
+  setOnlineUsers
 } from "../redux/userSlice";
 import { setMessages } from "../redux/messageSice";
 import useGetOtherUsers from "../hooks/useGetOtherUsers";
@@ -19,6 +20,7 @@ const Sidebar = () => {
 
   const [search, setSearch] = useState("");
   const { authUser, otherUsers } = useSelector((store) => store.user);
+  const {socket} = useSelector(store=> store.socket);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -30,11 +32,27 @@ const Sidebar = () => {
       dispatch(setAuthUser(null));
       dispatch(setMessages([]));
       dispatch(setOtherUsers([]));
+      dispatch(setOnlineUsers([]));
       dispatch(setSelectedUser(null));
     } catch (error) {
       console.log(error);
     }
   };
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewUser = (newUser) => {
+      console.log(" New User : "+newUser);
+      dispatch(setOtherUsers([...otherUsers, newUser]));
+    };
+
+    socket.on("new-user-registered", handleNewUser);
+
+    return () => {
+      socket.off("new-user-registered", handleNewUser);
+    };
+  }, [socket, otherUsers, dispatch]);
 
   const filteredUsers = otherUsers?.filter((user) =>
     user.fullName.toLowerCase().includes(search.toLowerCase())
@@ -54,7 +72,7 @@ const Sidebar = () => {
         </div>
       </form>
       <div className="divider px-3"></div>
-      <div className="flex-1 self-right">
+      <div className="flex-1 overflow-hidden">
         <OtherUsers users={filteredUsers} />
       </div>
 

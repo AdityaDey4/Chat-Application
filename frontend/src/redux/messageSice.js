@@ -12,7 +12,22 @@ const messageSlice = createSlice({
     addMessage: (state, action) => {
       state.messages.push(action.payload);
     },
+    updateMessageStatusToSeen: (state, action) => {
+      const receiverId = action.payload;
+      state.messages = state.messages.map((msg) =>
+        msg.receiverId === receiverId ? { ...msg, status: "seen" } : msg
+      );
+    },
+    updateMessageStatusToDelivered: (state, action) => {
+      const receiverId = action.payload;
+      state.messages = state.messages.map((msg) =>
+        msg.receiverId === receiverId && msg.status === "sent"
+          ? { ...msg, status: "delivered" }
+          : msg
+      );
+    },
   },
 });
-export const { setMessages, addMessage } = messageSlice.actions;
+export const { setMessages, addMessage, updateMessageStatusToSeen, updateMessageStatusToDelivered } =
+  messageSlice.actions;
 export default messageSlice.reducer;

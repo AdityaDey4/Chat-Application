@@ -1,36 +1,81 @@
-import {Server} from "socket.io";
+import { Server } from "socket.io";
 import http from "http";
 import express from "express";
+import { Message } from "../models/messageModel.js";
 
 const app = express();
 
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors:{
-        origin:['http://localhost:3000'],
-        methods:['GET', 'POST'],
-    },
+  cors: {
+    origin: ["http://localhost:3000"],
+    methods: ["GET", "POST"],
+  },
 });
 
 export const getReceiverSocketId = (receiverId) => {
-    return userSocketMap[receiverId];
-}
+  return userSocketMap[receiverId];
+};
 
 const userSocketMap = {}; // {userId->socketId}
 
+io.on("connection", async (socket) => {
+  const userId = socket.handshake.query.userId;
+  if (userId !== undefined) {
+    userSocketMap[userId] = socket.id;
+  }
+  console.log(`✅ Socket connected`);
 
-io.on('connection', (socket)=>{
-    const userId = socket.handshake.query.userId
-    if(userId !== undefined){
-        userSocketMap[userId] = socket.id;
-    } 
+  try {
+    await Message.updateMany(
+      {
+        receiverId: userId,
+        status: "sent",
+      },
+      { $set: { status: "delivered" } }
+    );
 
-    io.emit('getOnlineUsers',Object.keys(userSocketMap));
+    io.emit("messagesDelivered", {
+          receiverId: userId,
+        });
+    console.log("Message status set as delivered");
+  } catch (err) {
+    console.error("❌ Error updating messages to delivered:", err.message);
+  }
 
-    socket.on('disconnect', ()=>{
-        delete userSocketMap[userId];
-        io.emit('getOnlineUsers',Object.keys(userSocketMap));
-    })
-})
 
-export {app, io, server};
+  io.emit("getOnlineUsers", Object.keys(userSocketMap));
+
+  socket.on("markAsSeen", async (senderId) => {
+    try {
+
+      await Message.updateMany(
+        {
+          senderId,
+          receiverId : userId,
+          status: { $ne: "seen" }, // Only update unseen
+        },
+        { $set: { status: "seen" } }
+      );
+      // console.log(senderId +" : "+userId);
+
+      const senderSocketId = getReceiverSocketId(senderId);
+      if (senderSocketId) {
+        io.to(senderSocketId).emit("messagesSeen", {
+          receiverId: userId, // the one who saw the message
+        });
+      }
+
+    } catch (err) {
+      console.error("❌ Error in markAsSeen:", err.message);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    delete userSocketMap[userId];
+     console.log(`❌ Socket disconnected`);
+    io.emit("getOnlineUsers", Object.keys(userSocketMap)); // users connected with socket will get the information not the user who logged out
+  });
+});
+
+export { app, io, server };

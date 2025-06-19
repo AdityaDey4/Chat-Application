@@ -35,10 +35,10 @@ const Message = ({ message }) => {
             minute: "2-digit",
           })}
         </time>
-        <div className="chat-footer opacity-50">Delivered</div>
+        { message?.senderId === authUser?._id && <div className="chat-footer opacity-50">{message.status}</div>}
       </div>
       <div
-        className={`chat-bubble ${
+        className={`chat-bubble max-w-xs break-words overflow-hidden whitespace-pre-wrap ${
           message?.senderId !== authUser?._id ? "bg-gray-200 text-black" : ""
         } `}
       >

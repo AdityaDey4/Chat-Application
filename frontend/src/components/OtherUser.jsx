@@ -5,8 +5,11 @@ import { setSelectedUser } from "../redux/userSlice";
 const OtherUser = ({ user }) => {
   const dispatch = useDispatch();
   const { selectedUser, onlineUsers } = useSelector((store) => store.user);
+  const {socket} = useSelector((store)=> store.socket)
   const isOnline = onlineUsers?.includes(user._id);
+
   const selectedUserHandler = (user) => {
+    if(socket) socket.emit("markAsSeen", user._id);
     dispatch(setSelectedUser(user));
   };
 

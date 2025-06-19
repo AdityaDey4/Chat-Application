@@ -1,11 +1,15 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import toast from "react-hot-toast";
+import { useDispatch, useSelector } from "react-redux";
+import { setAuthUser } from '../redux/userSlice';
 // import { BASE_URL } from '..';
 
 
 const Signup = () => {
+  const dispatch = useDispatch();
+  const {authUser} = useSelector((store)=> store.user)
   const [user, setUser] = useState({
     fullName: "",
     username: "",
@@ -28,6 +32,7 @@ const Signup = () => {
       });
       if (res?.data?.success) {
         navigate("/login");
+        dispatch(setAuthUser(res.data));
         toast.success(res.data.message);
       }
     } catch (error) {
@@ -36,6 +41,10 @@ const Signup = () => {
     }
     
   }
+
+  useEffect(()=> {
+      if(authUser) navigate("/");
+    }, []);
   return (
     <div className="min-w-96 mx-auto">
       <div className='w-full p-6 rounded-lg shadow-md bg-gray-400 bg-clip-padding backdrop-filter backdrop-blur-md bg-opacity-10 border border-gray-100'>

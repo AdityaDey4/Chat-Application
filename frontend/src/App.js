@@ -8,11 +8,13 @@ import { useEffect, useState } from "react";
 import io from "socket.io-client";
 import { setSocket } from "./redux/socketSlice";
 import { setOnlineUsers, setSelectedUser } from "./redux/userSlice";
+import { setMessages } from "./redux/messageSice";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <HomePage />,
+    element: <ProtectedRoute><HomePage /></ProtectedRoute>
   },
   {
     path: "/signup",
@@ -56,6 +58,7 @@ function App() {
   useEffect(()=> {
     return ()=> {
       dispatch(setSelectedUser(null));
+      dispatch(setMessages([]));
     }
   },[])
 

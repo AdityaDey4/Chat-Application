@@ -1,10 +1,17 @@
 import { useEffect } from "react";
 import {useSelector, useDispatch} from "react-redux";
-import { addMessage } from "../redux/messageSice";
+import { addMessage, updateMessageStatusToSeen, updateMessageStatusToDelivered } from "../redux/messageSice";
+import { useRef } from "react";
 
 const useGetRealTimeMessage = () => {
     const { socket } = useSelector(store => store.socket);
+    const { selectedUser } = useSelector(store => store.user);
   const dispatch = useDispatch();
+
+  const selectedUserRef = useRef(selectedUser);
+  useEffect(() => {
+    selectedUserRef.current = selectedUser;
+  }, [selectedUser]);
 
   useEffect(() => {
     if (!socket) {
@@ -12,15 +19,35 @@ const useGetRealTimeMessage = () => {
       return;
     }
 
-    console.log("✅ Setting up socket listener for newMessage...");
+    // console.log("✅ Setting up socket listener for newMessage...");
 
     const handleNewMessage = (newMessage) => {
-      console.log("📨 New message received via socket:", newMessage);
 
-      dispatch(addMessage(newMessage));
+      const currentSelectedUser = selectedUserRef.current;
+      if(newMessage && currentSelectedUser && newMessage.senderId == currentSelectedUser._id){
+        dispatch(addMessage(newMessage));
+        
+        socket.emit("markAsSeen", newMessage.senderId);
+        console.log(currentSelectedUser)
+      } 
     };
 
+    const handleMessagesSeen = ({ receiverId }) => {
+      const currentUserId = selectedUserRef.current?._id;
+      // Only update if the seen event is related to current chat
+      if (receiverId === currentUserId) {
+        dispatch(updateMessageStatusToSeen(receiverId));
+      }
+    };
+
+    const handleMessagesDelivered = ({receiverId}) => {
+      console.log("Update All th delivered")
+      dispatch(updateMessageStatusToDelivered(receiverId));
+    }
+
     socket.on("newMessage", handleNewMessage);
+    socket.on("messagesSeen", handleMessagesSeen);
+    socket.on("messagesDelivered", handleMessagesDelivered);
 
     return () => {
       console.log("🧹 Cleaning up socket listener for newMessage");

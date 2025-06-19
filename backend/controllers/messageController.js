@@ -1,3 +1,4 @@
+import e from "express";
 import { Conversation } from "../models/conversationModel.js";
 import { Message } from "../models/messageModel.js";
 import { getReceiverSocketId, io } from "../socket/socket.js";
@@ -20,6 +21,7 @@ export const sendMessage = async (req,res) => {
         const newMessage = await Message.create({
             senderId,
             receiverId,
+            conversationId : gotConversation._id,
             message
         });
         if(newMessage){
@@ -27,13 +29,17 @@ export const sendMessage = async (req,res) => {
         };
         
 
-        await gotConversation.save();
-        // await Promise.all([gotConversation.save(), newMessage.save()]);
-         
         // SOCKET IO
         const receiverSocketId = getReceiverSocketId(receiverId);
         if(receiverSocketId){
             io.to(receiverSocketId).emit("newMessage", newMessage);
+
+            // Update status to 'delivered'
+            newMessage.status = 'delivered';
+            await Promise.all([gotConversation.save(), newMessage.save()]);
+            
+        }else {
+            await gotConversation.save();
         }
         return res.status(201).json({
             newMessage
@@ -53,4 +59,15 @@ export const getMessage = async (req,res) => {
     } catch (error) {
         console.log(error);
     }
+}
+
+export const getConversationId = async (req, res)=> {
+
+    const receiverId = req.params.id;
+    const converstaion = await Message.findOne({
+        senderId: req.id,
+        receiverId: receiverId,
+    });
+
+    return res.status(200).json(converstaion ? converstaion.conversationId : null);
 }
