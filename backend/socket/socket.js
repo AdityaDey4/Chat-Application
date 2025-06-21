@@ -2,7 +2,7 @@ import { Server } from "socket.io";
 import http from "http";
 import express from "express";
 import { Message } from "../models/messageModel.js";
-
+import {Conversation} from "../models/conversationModel.js"
 const app = express();
 
 const server = http.createServer(app);
@@ -45,6 +45,49 @@ io.on("connection", async (socket) => {
 
 
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
+
+  socket.on("requestMessagePreviews", async () => {
+    try {
+      const conversations = await Conversation.find({
+        participants: userId,
+      })
+        .populate("messages")
+        .populate("participants");
+
+      const previews = {};
+
+      for (let convo of conversations) {
+        const otherUser = convo.participants.find(
+          (p) => p._id.toString() !== userId
+        );
+
+        if (!otherUser) continue;
+
+        const msgs = convo.messages;
+
+        const lastMessage = msgs[msgs.length - 1];
+
+        const unreadCount = msgs.filter(
+          (msg) =>
+            msg.receiverId.toString() === userId &&
+            msg.status === "delivered"
+        ).length;
+
+        previews[otherUser._id] = {
+          lastMessage: {
+            text: lastMessage.message,
+            createdAt: lastMessage.createdAt,
+            status: lastMessage.status,
+          },
+          unreadCount,
+        };
+      }
+
+      socket.emit("messagePreviews", previews);
+    } catch (err) {
+      console.log("Error sending previews:", err.message);
+    }
+  });
 
   socket.on("markAsSeen", async (senderId) => {
     try {

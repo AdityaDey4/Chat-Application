@@ -52,6 +52,8 @@ const useGetRealTimeMessage = () => {
     return () => {
       console.log("🧹 Cleaning up socket listener for newMessage");
       socket.off("newMessage", handleNewMessage);
+      socket.off("messagesSeen", handleMessagesSeen);
+      socket.off("messagesDelivered", handleMessagesDelivered);
     };
   }, [socket, dispatch]);
 };

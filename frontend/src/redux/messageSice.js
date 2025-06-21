@@ -4,6 +4,7 @@ const messageSlice = createSlice({
   name: "message",
   initialState: {
     messages: [],
+    previewMap: null,
   },
   reducers: {
     setMessages: (state, action) => {
@@ -26,8 +27,11 @@ const messageSlice = createSlice({
           : msg
       );
     },
+    setMessagePreviews : (state, action) => {
+      state.previewMap = action.payload;
+    }
   },
 });
-export const { setMessages, addMessage, updateMessageStatusToSeen, updateMessageStatusToDelivered } =
+export const { setMessages, addMessage, updateMessageStatusToSeen, updateMessageStatusToDelivered, setMessagePreviews } =
   messageSlice.actions;
 export default messageSlice.reducer;

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { BiSearchAlt2 } from "react-icons/bi";
 import OtherUsers from "./OtherUsers";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -9,7 +8,7 @@ import {
   setAuthUser,
   setOtherUsers,
   setSelectedUser,
-  setOnlineUsers
+  setOnlineUsers,
 } from "../redux/userSlice";
 import { setMessages } from "../redux/messageSice";
 import useGetOtherUsers from "../hooks/useGetOtherUsers";
@@ -20,7 +19,9 @@ const Sidebar = () => {
 
   const [search, setSearch] = useState("");
   const { authUser, otherUsers } = useSelector((store) => store.user);
-  const {socket} = useSelector(store=> store.socket);
+  const { previewMap } = useSelector((state) => state.message);
+  const { socket } = useSelector((store) => store.socket);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -43,7 +44,7 @@ const Sidebar = () => {
     if (!socket) return;
 
     const handleNewUser = (newUser) => {
-      console.log(" New User : "+newUser);
+      console.log(" New User : " + newUser);
       dispatch(setOtherUsers([...otherUsers, newUser]));
     };
 
@@ -54,7 +55,18 @@ const Sidebar = () => {
     };
   }, [socket, otherUsers, dispatch]);
 
-  const filteredUsers = otherUsers?.filter((user) =>
+  const sortedUsers = [...otherUsers].sort((a, b) => {
+    const aMsg = previewMap[a?._id]?.lastMessage?.createdAt;
+    const bMsg = previewMap[b?._id]?.lastMessage?.createdAt;
+
+    if (!aMsg && !bMsg) return 0;
+    if (!aMsg) return 1;
+    if (!bMsg) return -1;
+
+    return new Date(bMsg) - new Date(aMsg); // newest first
+  });
+
+  const filteredUsers = sortedUsers?.filter((user) =>
     user.fullName.toLowerCase().includes(search.toLowerCase())
   );
   return (

@@ -33,6 +33,7 @@ export const sendMessage = async (req,res) => {
         const receiverSocketId = getReceiverSocketId(receiverId);
         if(receiverSocketId){
             io.to(receiverSocketId).emit("newMessage", newMessage);
+            io.to(receiverSocketId).emit("refreshMessagePreviews");
 
             // Update status to 'delivered'
             newMessage.status = 'delivered';
@@ -41,6 +42,7 @@ export const sendMessage = async (req,res) => {
         }else {
             await gotConversation.save();
         }
+        io.to(getReceiverSocketId(senderId))?.emit("refreshMessagePreviews");
         return res.status(201).json({
             newMessage
         })
